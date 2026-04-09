@@ -1,0 +1,9 @@
+name,email,category,expiry_date
+Mario Verdi,mailgatetest+mario@gmail.com,expiring,2026-04-15
+Anna Neri,mailgatetest+anna@gmail.com,active,2026-06-10
+Sara Verdi,mailgatetest+sara@gmail.com,active,2026-12-01
+Luca Martini,mailgatetest+luca@gmail.com,expired,2026-03-01
+Carlo Bianchi,mailgatetest+carlo@gmail.com,active,2026-12-01
+Laura Rossi,mailgatetest+laura@gmail.com,active,2026-12-01
+Giovanni Bianchi,mailgatetest+giovanni@gmail.com,active,2026-12-01
+unknown.person,wrongemail,expiring,2026-04-15

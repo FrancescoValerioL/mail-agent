@@ -1,0 +1,121 @@
+[
+  {
+    "to": "mailgatetest+mario@gmail.com",
+    "subject": "Promemoria: Rinnovo credenziali in scadenza",
+    "body": "Gentile Mario Verdi,\n\nTi informiamo che le tue credenziali sono in scadenza il 15/04/2026.\n\nTi invitiamo a procedere tempestivamente con il rinnovo per evitare interruzioni nell'accesso ai sistemi aziendali.\n\nPer qualsiasi chiarimento, non esitare a contattare il supporto IT.\n\nCordiali saluti,\nIl Team IT",
+    "isRectification": false,
+    "sentAt": "2026-04-09T14:51:43.940Z"
+  },
+  {
+    "to": "mailgatetest+luca@gmail.com",
+    "subject": "URGENTE: Credenziali scadute",
+    "body": "Gentile Luca Martini,\n\nTi informiamo che le tue credenziali sono scadute il 01/03/2026.\n\nÈ necessario procedere IMMEDIATAMENTE al rinnovo per ripristinare l'accesso ai sistemi aziendali.\n\nTi preghiamo di contattare urgentemente il supporto IT.\n\nCordiali saluti,\nIl Team IT",
+    "isRectification": false,
+    "sentAt": "2026-04-09T14:51:45.268Z"
+  },
+  {
+    "to": "mailgatetest+laura@gmail.com",
+    "subject": "Notifica credenziali team Sviluppo Frontend",
+    "body": "Gentile Laura Rossi,\n\nIn qualità di Team Leader del team Sviluppo Frontend, ti informiamo che sono state inviate comunicazioni relative alle credenziali ai seguenti membri del tuo team:\n\n- Mario Verdi\n\nTi invitiamo a verificare che i membri del tuo team procedano con le azioni necessarie.\n\nCordiali saluti,\nIl Team IT",
+    "isRectification": false,
+    "sentAt": "2026-04-09T14:51:47.113Z"
+  },
+  {
+    "to": "mailgatetest+giovanni@gmail.com",
+    "subject": "Notifica credenziali team Sviluppo Backend",
+    "body": "Gentile Giovanni Bianchi,\n\nIn qualità di Team Leader del team Sviluppo Backend, ti informiamo che sono state inviate comunicazioni relative alle credenziali ai seguenti membri del tuo team:\n\n- Luca Martini\n\nTi invitiamo a verificare che i membri del tuo team procedano con le azioni necessarie.\n\nCordiali saluti,\nIl Team IT",
+    "isRectification": false,
+    "sentAt": "2026-04-09T14:51:48.752Z"
+  },
+  {
+    "to": "mailgatetest+carlo@gmail.com",
+    "subject": "Riepilogo comunicazioni credenziali",
+    "body": "Gentile Carlo Bianchi,\n\nIn qualità di Manager, ti informiamo che sono state inviate comunicazioni relative alle credenziali ai seguenti team:\n\n- Sviluppo Frontend\n- Sviluppo Backend\n\nI rispettivi Team Leader sono stati informati.\n\nCordiali saluti,\nIl Team IT",
+    "isRectification": false,
+    "sentAt": "2026-04-09T14:51:50.092Z"
+  },
+  {
+    "to": "mailgatetest+marco@gmail.com",
+    "subject": "Riepilogo anomalie nel database credenziali",
+    "body": "Gentile Marco Colombo,\n\nIn qualità di Data Steward, ti segnaliamo le seguenti anomalie rilevate nel file users.csv:\n\n**Utente: unknown.person**\n- Email malformata: \"wrongemail\"\n- Persona non presente in org.json\n\nTi preghiamo di verificare e correggere i dati quanto prima.\n\nCordiali saluti,\nIl Sistema di Gestione Credenziali",
+    "isRectification": false,
+    "sentAt": "2026-04-09T14:51:51.721Z"
+  },
+  {
+    "to": "mailgatetest+mario@gmail.com",
+    "subject": "Promemoria: Certificazione in scadenza",
+    "body": "Gentile Mario Verdi,\n\nti ricordiamo che la tua certificazione scadrà il 15 aprile 2026 (tra 6 giorni).\n\nTi invitiamo a prendere le necessarie misure per il rinnovo.\n\nCordiali saluti",
+    "isRectification": false,
+    "sentAt": "2026-04-09T14:52:26.335Z"
+  },
+  {
+    "to": "mailgatetest+mario@gmail.com",
+    "subject": "Promemoria: La tua credenziale sta per scadere",
+    "body": "Gentile Mario Verdi,\n\nti ricordiamo che la tua credenziale scadrà il 15 aprile 2026, tra soli 6 giorni.\n\nTi invitiamo a procedere con il rinnovo quanto prima per evitare interruzioni nei tuoi accessi.\n\nSe hai già provveduto al rinnovo, puoi ignorare questo promemoria.\n\nCordiali saluti,\nIl team di gestione credenziali",
+    "isRectification": false,
+    "sentAt": "2026-04-09T14:54:24.773Z"
+  },
+  {
+    "to": "mailgatetest+mario@gmail.com",
+    "subject": "Promemoria: La tua credenziale scade a breve",
+    "body": "Gentile Mario Verdi,\n\nti ricordiamo che la tua credenziale scadrà il 15/04/2026 (tra 6 giorni).\n\nTi invitiamo a provvedere al rinnovo per evitare interruzioni nell'accesso ai servizi aziendali.\n\nPer qualsiasi necessità, non esitare a contattare il supporto.\n\nCordiali saluti,\nIl Team HR",
+    "isRectification": false,
+    "sentAt": "2026-04-09T14:57:43.972Z"
+  },
+  {
+    "to": "mailgatetest+mario@gmail.com",
+    "subject": "Promemoria: La tua credenziale scadrà tra pochi giorni",
+    "body": "Gentile Mario Verdi,\n\nTi ricordiamo che la tua credenziale aziendale scadrà il 15/04/2026 (tra 6 giorni).\n\nTi invitiamo a procedere tempestivamente con il rinnovo per evitare interruzioni nell'accesso ai servizi aziendali.\n\nPer qualsiasi necessità, contatta il supporto IT.\n\nCordiali saluti,\nIT Support Team",
+    "isRectification": false,
+    "sentAt": "2026-04-09T15:00:41.695Z"
+  },
+  {
+    "to": "mailgatetest+mario@gmail.com",
+    "subject": "Promemoria: Credenziali in scadenza",
+    "body": "Gentile Mario Verdi,\n\nti informiamo che le tue credenziali aziendali scadranno il 15/04/2026 (tra 6 giorni).\n\nTi invitiamo a procedere tempestivamente con il rinnovo per evitare interruzioni nell'accesso ai sistemi aziendali.\n\nCordiali saluti,\nIl Team IT",
+    "isRectification": false,
+    "sentAt": "2026-04-09T15:03:01.617Z"
+  },
+  {
+    "to": "mailgatetest+luca@gmail.com",
+    "subject": "URGENTE: Credenziali scadute",
+    "body": "Gentile Luca Martini,\n\nti informiamo che le tue credenziali aziendali sono scadute il 01/03/2026.\n\nÈ necessario procedere IMMEDIATAMENTE con il rinnovo per ripristinare l'accesso ai sistemi aziendali.\n\nContatta urgentemente l'ufficio IT.\n\nCordiali saluti,\nIl Team IT",
+    "isRectification": false,
+    "sentAt": "2026-04-09T15:03:03.251Z"
+  },
+  {
+    "to": "mailgatetest+laura@gmail.com",
+    "subject": "Notifica: Comunicazioni inviate al tuo team",
+    "body": "Gentile Laura Rossi,\n\nti informiamo che sono state inviate comunicazioni relative alle credenziali ai seguenti membri del team Sviluppo Frontend:\n\n- Mario Verdi\n\nTi preghiamo di monitorare la situazione e assicurarti che i membri del tuo team procedano con le azioni necessarie.\n\nCordiali saluti,\nIl Team IT",
+    "isRectification": false,
+    "sentAt": "2026-04-09T15:03:04.686Z"
+  },
+  {
+    "to": "mailgatetest+giovanni@gmail.com",
+    "subject": "Notifica: Comunicazioni inviate al tuo team",
+    "body": "Gentile Giovanni Bianchi,\n\nti informiamo che sono state inviate comunicazioni relative alle credenziali ai seguenti membri del team Sviluppo Backend:\n\n- Luca Martini\n\nTi preghiamo di monitorare la situazione e assicurarti che i membri del tuo team procedano con le azioni necessarie.\n\nCordiali saluti,\nIl Team IT",
+    "isRectification": false,
+    "sentAt": "2026-04-09T15:03:06.290Z"
+  },
+  {
+    "to": "mailgatetest+carlo@gmail.com",
+    "subject": "Riepilogo: Comunicazioni credenziali inviate",
+    "body": "Gentile Carlo Bianchi,\n\nti informiamo che sono state inviate comunicazioni relative alle credenziali ai seguenti team:\n\n- Sviluppo Frontend\n- Sviluppo Backend\n\nI rispettivi team leader sono stati notificati e si stanno occupando della supervisione.\n\nCordiali saluti,\nIl Team IT",
+    "isRectification": false,
+    "sentAt": "2026-04-09T15:03:07.759Z"
+  },
+  {
+    "to": "mailgatetest+marco@gmail.com",
+    "subject": "Anomalie rilevate nel file users.csv",
+    "body": "Gentile Marco Colombo,\n\ndurante l'elaborazione del file users.csv sono state rilevate le seguenti anomalie:\n\n**Record: unknown.person**\n- Email malformata: \"wrongemail\"\n- Persona non trovata in org.json\n\nQuesto record non è stato processato. Ti preghiamo di verificare e correggere i dati nel file CSV.\n\nCordiali saluti,\nSistema di Gestione Credenziali",
+    "isRectification": false,
+    "sentAt": "2026-04-09T15:03:09.294Z"
+  },
+  {
+    "to": "mailgatetest+mario@gmail.com",
+    "subject": "Promemoria: La tua certificazione scade tra pochi giorni",
+    "body": "Ciao Mario Verdi,\n\nTi ricordiamo che la tua certificazione scadrà il 15 aprile 2026, tra soli 6 giorni.\n\nTi invitiamo a procedere con il rinnovo quanto prima per evitare interruzioni.\n\nPer qualsiasi necessità, non esitare a contattarci.\n\nCordiali saluti",
+    "isRectification": false,
+    "sentAt": "2026-04-09T15:03:50.981Z"
+  }
+]
