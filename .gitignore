@@ -1,2 +1,5 @@
 .env
 /node_modules
+
+data/send_log.json
+data/send_emails.json
