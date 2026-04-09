@@ -1,5 +1,7 @@
 .env
-/node_modules
+credentials.json
+token.json
 
+/node_modules
 /data/send_log.json
 /data/send_emails.json

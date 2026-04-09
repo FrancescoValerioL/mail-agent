@@ -3,6 +3,8 @@ import fs from "fs";
 import path from "path";
 import Papa from "papaparse";
 import nodemailer from "nodemailer";
+import { google } from "googleapis";
+import { getAuthClient } from "../auth/google";
 
 export type ToolFunction = (input: Record<string, unknown>) => unknown | Promise<unknown>;
 
@@ -144,6 +146,38 @@ export const toolDefinitions: Anthropic.Tool[] = [
                 }
             },
             required: ["filename", "fileModifiedAt", "contentSnapshot", "lastProcessedAt", "recipients", "status"],
+        }
+    },
+    {
+        name: "list_drive_folder",
+        description: "Lista i file CSV e Google Sheet disponibili in una cartella Google Drive con la loro data di ultima modifica. Usa questo tool al posto di list_folder quando i file sono su Drive.",
+        input_schema: {
+            type: "object" as const,
+            properties: {
+                folderEnvKey: {
+                    type: "string",
+                    description: "Nome della variabile d'ambiente che contiene l'ID della cartella Drive. Es: DRIVE_FOLDER_DATA, DRIVE_FOLDER_REFERENCE",
+                }
+            },
+            required: ["folderEnvKey"],
+        }
+    },
+    {
+        name: "read_drive_sheet",
+        description: "Legge il contenuto di un file Google Sheet o CSV da Google Drive e lo restituisce come array di oggetti. Usa il fileId ottenuto da list_drive_folder.",
+        input_schema: {
+            type: "object" as const,
+            properties: {
+                fileId: {
+                    type: "string",
+                    description: "ID del file su Google Drive, ottenuto da list_drive_folder",
+                },
+                mimeType: {
+                    type: "string",
+                    description: "MIME type del file, ottenuto da list_drive_folder",
+                }
+            },
+            required: ["fileId", "mimeType"],
         }
     }
 ];
@@ -300,5 +334,72 @@ export const toolImplementations: Record<string, ToolFunction> = {
 
         console.log(`[tool] write_send_log ha aggiornato: ${logFilepath}`);
         return { success: true };
-    }
+    },
+    list_drive_folder: async (input) => {
+        const folderEnvKey = input.folderEnvKey as string;
+        const folderId = process.env[folderEnvKey];
+
+        if (!folderId) {
+            return { error: `Variabile d'ambiente non trovata: ${folderEnvKey}` };
+        }
+
+        const auth = await getAuthClient();
+        const drive = google.drive({ version: "v3", auth });
+
+        const response = await drive.files.list({
+            q: `'${folderId}' in parents and trashed = false`,
+            fields: "files(id, name, modifiedTime, mimeType)",
+            orderBy: "modifiedTime desc",
+        });
+
+        const files = response.data.files ?? [];
+
+        return files.map((file) => ({
+            fileId: file.id,
+            filename: file.name,
+            lastModifiedAt: file.modifiedTime,
+            mimeType: file.mimeType,
+        }));
+    },
+    read_drive_sheet: async (input) => {
+        const fileId = input.fileId as string;
+        const mimeType = input.mimeType as string;
+
+        const auth = await getAuthClient();
+
+        // Google Sheet nativo
+        if (mimeType === "application/vnd.google-apps.spreadsheet") {
+            const sheets = google.sheets({ version: "v4", auth });
+            const response = await sheets.spreadsheets.values.get({
+                spreadsheetId: fileId,
+                range: "A:Z",
+            });
+
+            const rows = response.data.values ?? [];
+            if (rows.length === 0) return [];
+
+            const headers = rows[0] as string[];
+            return rows.slice(1).map((row) => {
+                const obj: Record<string, string> = {};
+                headers.forEach((header, i) => {
+                    obj[header] = (row[i] as string) ?? "";
+                });
+                return obj;
+            });
+        }
+
+        // CSV normale
+        const drive = google.drive({ version: "v3", auth });
+        const response = await drive.files.get(
+            { fileId, alt: "media" },
+            { responseType: "text" }
+        );
+
+        const result = Papa.parse(response.data as string, {
+            header: true,
+            skipEmptyLines: true,
+        });
+
+        return result.data;
+    },
 };
