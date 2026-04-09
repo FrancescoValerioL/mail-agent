@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { toolDefinitions, toolImplementations } from "./tools/index.js";
+import { toolDefinitions, toolImplementations } from "../tools/index.js";
 
 const client = new Anthropic();
 

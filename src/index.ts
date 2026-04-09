@@ -1,7 +1,7 @@
 import "dotenv/config";
-import { runAgent } from "./agent.js";
+import { runOrchestrator, AgentName } from "./orchestrator.js";
 
-const goal = process.argv[2] ??
-    "Leggi il file users.csv e dimmi quanti utenti ci sono per categoria";
+const agent = (process.argv[2] as AgentName) ?? "credentials";
+const goal = process.argv[3] ?? "Processa la cartella data/ e invia le mail";
 
-runAgent(goal).catch(console.error);
+runOrchestrator(agent, goal).catch(console.error);
