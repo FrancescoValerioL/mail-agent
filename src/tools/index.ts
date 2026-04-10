@@ -73,7 +73,12 @@ export const toolDefinitions: Anthropic.Tool[] = [
         description: "Legge il file org.json e restituisce le informazioni sull'organizzazione",
         input_schema: {
             type: "object" as const,
-            properties: {},
+            properties: {
+                filename: {
+                    type: "string",
+                    description: "Nome del file org.json da leggere dalla cartella reference in google drive",
+                }
+            },
             required: [],
         }
     },
@@ -227,38 +232,58 @@ export const toolImplementations: Record<string, ToolFunction> = {
 
         return result.data;
     },
-    check_send_log: (input) => {
+    check_send_log: async (input) => {
         const filename = input.filename as string;
         const fileModifiedAt = new Date(input.fileModifiedAt as string);
-        const logFilepath = path.join(process.cwd(), "data", "send_log.json");
+        const folderId = process.env.DRIVE_FOLDER_LOGS;
+        const logFilename = "send_log.json";
 
-        console.log(`[tool] check_send_log legge: ${logFilepath}`);
+        const auth = await getAuthClient();
+        const drive = google.drive({ version: "v3", auth });
 
-        if (!fs.existsSync(logFilepath)) {
+        // Cerca il file di log su Drive
+        const existing = await drive.files.list({
+            q: `'${folderId}' in parents and name = '${logFilename}' and trashed = false`,
+            fields: "files(id)",
+        });
+
+        const existingFile = existing.data.files?.[0];
+
+        if (!existingFile?.id) {
             return { status: "never_sent" };
         }
 
-        const logContent = JSON.parse(fs.readFileSync(logFilepath, "utf-8"));
+        // Leggi il contenuto
+        const response = await drive.files.get(
+            { fileId: existingFile.id, alt: "media" },
+            { responseType: "text" }
+        );
+
+        const logContent = JSON.parse(response.data as string);
         const logEntry = logContent[filename];
 
         if (!logEntry) {
             return { status: "never_sent" };
         }
+
         const lastLog = new Date(logEntry.fileModifiedAt);
-        const lastLogDate = new Date(lastLog.toISOString().split("T")[0]);
         const fileModDate = new Date(fileModifiedAt.toISOString().split("T")[0]);
+        const lastLogDate = new Date(lastLog.toISOString().split("T")[0]);
+
+        console.log(`[tool] check_send_log lastLog: ${lastLogDate.toISOString()}`);
+        console.log(`[tool] check_send_log fileModifiedAt: ${fileModDate.toISOString()}`);
 
         if (fileModDate > lastLogDate) {
             return {
                 status: "modified_after_send",
                 lastProcessedAt: logEntry.lastProcessedAt,
-                contentSnapshot: logEntry.contentSnapshot
+                contentSnapshot: logEntry.contentSnapshot,
             };
         } else {
             return {
                 status: "already_sent",
                 contentSnapshot: logEntry.contentSnapshot,
-                lastProcessedAt: logEntry.lastProcessedAt
+                lastProcessedAt: logEntry.lastProcessedAt,
             };
         }
     },
@@ -280,17 +305,32 @@ export const toolImplementations: Record<string, ToolFunction> = {
 
         return results;
     },
-    read_org: () => {
-        const orgFilePath = path.join(process.cwd(), "data", "org.json");
+    read_org: async (input) => {
+        const folderId = process.env.DRIVE_FOLDER_REFERENCE;
+        const filename = input.filename as string || "org.json";
 
-        console.log(`[tool] read_org legge: ${orgFilePath}`);
+        console.log(`[tool] read_org legge: ${filename} da cartella reference su Drive`);
+        const auth = await getAuthClient();
+        const drive = google.drive({ version: "v3", auth });
+        const response = await drive.files.list({
+            q: `'${folderId}' in parents and trashed = false`,
+            fields: "files(id, name, modifiedTime, mimeType)",
+            orderBy: "modifiedTime desc",
+        });
 
-        if (!fs.existsSync(orgFilePath)) {
-            return { error: "File org.json non trovato" };
+        const files = response.data.files ?? [];
+        const file = files.find((f) => f.name === filename);
+        if (!file) {
+            return { error: `File non trovato: ${filename}` };
         }
+        const fileId = file.id;
 
-        const content = fs.readFileSync(orgFilePath, "utf-8");
-        return JSON.parse(content);
+        const drivefile = await drive.files.get(
+            { fileId: fileId!, alt: "media" },
+            { responseType: "text" }
+        );
+        const result = JSON.parse(drivefile.data as string);
+        return result;
     },
     send_email: async (input) => {
         const to = input.to as string;
@@ -298,8 +338,11 @@ export const toolImplementations: Record<string, ToolFunction> = {
         const body = input.body as string;
         const isRectification = input.isRectification as boolean;
         const previousSentAt = input.previousSentAt as string | undefined;
-        const filepath = path.join(process.cwd(), "data", "send_emails.json");
 
+        const folderId = process.env.DRIVE_FOLDER_MANUAL;
+        const logFilename = "send_emails.json";
+
+        // Invia la mail
         await transporter.sendMail({
             from: `"Mail Agent" <${process.env.EMAIL_USER}>`,
             to,
@@ -307,9 +350,24 @@ export const toolImplementations: Record<string, ToolFunction> = {
             text: body,
         });
 
+        const auth = await getAuthClient();
+        const drive = google.drive({ version: "v3", auth });
+
+        // Cerca il file esistente su Drive
+        const existing = await drive.files.list({
+            q: `'${folderId}' in parents and name = '${logFilename}' and trashed = false`,
+            fields: "files(id)",
+        });
+
+        const existingFile = existing.data.files?.[0];
         let emails: object[] = [];
-        if (fs.existsSync(filepath)) {
-            emails = JSON.parse(fs.readFileSync(filepath, "utf-8"));
+
+        if (existingFile?.id) {
+            const response = await drive.files.get(
+                { fileId: existingFile.id, alt: "media" },
+                { responseType: "text" }
+            );
+            emails = JSON.parse(response.data as string);
         }
 
         emails.push({
@@ -318,18 +376,39 @@ export const toolImplementations: Record<string, ToolFunction> = {
             body,
             isRectification,
             ...(previousSentAt && { previousSentAt }),
-            sentAt: new Date().toISOString()
+            sentAt: new Date().toISOString(),
         });
 
-        fs.writeFileSync(filepath, JSON.stringify(emails, null, 2), "utf-8");
+        const fileBody = JSON.stringify(emails, null, 2);
+
+        if (existingFile?.id) {
+            await drive.files.update({
+                fileId: existingFile.id,
+                media: {
+                    mimeType: "application/json",
+                    body: fileBody,
+                },
+            });
+        } else {
+            await drive.files.create({
+                requestBody: {
+                    name: logFilename,
+                    parents: [folderId!],
+                },
+                media: {
+                    mimeType: "application/json",
+                    body: fileBody,
+                },
+            });
+        }
 
         return {
             success: true,
             to,
-            isRectification
+            isRectification,
         };
     },
-    write_send_log: (input) => {
+    write_send_log: async (input) => {
         const filename = input.filename as string;
         const fileModifiedAt = input.fileModifiedAt as string;
         const lastProcessedAt = input.lastProcessedAt as string;
@@ -337,24 +416,65 @@ export const toolImplementations: Record<string, ToolFunction> = {
         const status = input.status as string;
         const contentSnapshot = input.contentSnapshot as object[];
 
-        const logFilepath = path.join(process.cwd(), "data", "send_log.json");
+        const folderId = process.env.DRIVE_FOLDER_LOGS;
+        const logFilename = "send_log.json";
+
+        const auth = await getAuthClient();
+        const drive = google.drive({ version: "v3", auth });
+
+        // Leggi il log esistente o parti da oggetto vuoto
         let logContent: Record<string, unknown> = {};
 
-        if (fs.existsSync(logFilepath)) {
-            logContent = JSON.parse(fs.readFileSync(logFilepath, "utf-8"));
+        const existing = await drive.files.list({
+            q: `'${folderId}' in parents and name = '${logFilename}' and trashed = false`,
+            fields: "files(id)",
+        });
+
+        const existingFile = existing.data.files?.[0];
+
+        if (existingFile?.id) {
+            const response = await drive.files.get(
+                { fileId: existingFile.id, alt: "media" },
+                { responseType: "text" }
+            );
+            logContent = JSON.parse(response.data as string);
         }
 
+        // Aggiorna l'entry
         logContent[filename] = {
             fileModifiedAt,
             lastProcessedAt,
             recipients,
             status,
-            contentSnapshot
+            contentSnapshot,
         };
 
-        fs.writeFileSync(logFilepath, JSON.stringify(logContent, null, 2), "utf-8");
+        const body = JSON.stringify(logContent, null, 2);
 
-        console.log(`[tool] write_send_log ha aggiornato: ${logFilepath}`);
+        if (existingFile?.id) {
+            // Aggiorna file esistente
+            await drive.files.update({
+                fileId: existingFile.id,
+                media: {
+                    mimeType: "application/json",
+                    body,
+                },
+            });
+        } else {
+            // Crea nuovo file
+            await drive.files.create({
+                requestBody: {
+                    name: logFilename,
+                    parents: [folderId!],
+                },
+                media: {
+                    mimeType: "application/json",
+                    body,
+                },
+            });
+        }
+
+        console.log(`[tool] write_send_log aggiornato su Drive`);
         return { success: true };
     },
     list_drive_folder: async (input) => {

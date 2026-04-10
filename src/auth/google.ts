@@ -4,8 +4,8 @@ import path from "path";
 import readline from "readline";
 
 const SCOPES = [
-    "https://www.googleapis.com/auth/drive.readonly",
-    "https://www.googleapis.com/auth/spreadsheets.readonly",
+    "https://www.googleapis.com/auth/drive",           // lettura + scrittura
+    "https://www.googleapis.com/auth/spreadsheets",    // lettura + scrittura sheets
     "https://www.googleapis.com/auth/calendar.events",
 ];
 
