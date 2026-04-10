@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { toolDefinitions, toolImplementations } from "../tools/index.js";
+import { logStep } from "../logger.js";
 
 const client = new Anthropic();
 
@@ -61,7 +62,7 @@ Quando ti viene dato un obiettivo, segui sempre questo flusso nell'ordine indica
 3. Segui il CASO corrispondente allo stato ricevuto`;
 
 export async function runAgent(userGoal: string): Promise<void> {
-    console.log(`\n🎯 Obiettivo: ${userGoal}\n`);
+    logStep(`🎯 Obiettivo: ${userGoal}`);
 
     const messages: Anthropic.MessageParam[] = [
         { role: "user", content: userGoal },
@@ -77,7 +78,7 @@ export async function runAgent(userGoal: string): Promise<void> {
             messages,
         });
 
-        console.log(`[agente] stop_reason: ${response.stop_reason}`);
+        logStep(`[agente] stop_reason: ${response.stop_reason}`);
 
         // Aggiungi la risposta del modello alla storia
         messages.push({ role: "assistant", content: response.content });
@@ -86,7 +87,7 @@ export async function runAgent(userGoal: string): Promise<void> {
         if (response.stop_reason === "end_turn") {
             const textBlock = response.content.find((b) => b.type === "text");
             if (textBlock && textBlock.type === "text") {
-                console.log(`\n✅ Risposta finale:\n${textBlock.text}`);
+                logStep(`\n✅ Risposta finale:\n${textBlock.text}`);
             }
             break;
         }
@@ -98,8 +99,8 @@ export async function runAgent(userGoal: string): Promise<void> {
             for (const block of response.content) {
                 if (block.type !== "tool_use") continue;
 
-                console.log(`[agente] chiama tool: ${block.name}`);
-                console.log(`[agente] input: ${JSON.stringify(block.input)}`);
+                logStep(`[agente] chiama tool: ${block.name}`);
+                logStep(`[agente] input: ${JSON.stringify(block.input)}`);
 
                 const implementation = toolImplementations[block.name];
 
@@ -108,7 +109,7 @@ export async function runAgent(userGoal: string): Promise<void> {
                 }
 
                 const result = await implementation(block.input as Record<string, unknown>);
-                console.log(`[agente] risultato: ${JSON.stringify(result)}\n`);
+                logStep(`[agente] risultato: ${JSON.stringify(result)}\n`);
 
                 toolResults.push({
                     type: "tool_result",
