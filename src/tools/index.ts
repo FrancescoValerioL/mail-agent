@@ -179,6 +179,28 @@ export const toolDefinitions: Anthropic.Tool[] = [
             },
             required: ["fileId", "mimeType"],
         }
+    },
+    {
+        name: "create_calendar_event",
+        description: "Crea un evento sul Google Calendar dell'utente per ricordargli la scadenza delle credenziali. Usare solo per utenti con categoria 'expiring', mai per 'expired'.",
+        input_schema: {
+            type: "object" as const,
+            properties: {
+                attendeeEmail: {
+                    type: "string",
+                    description: "Email del destinatario dell'evento",
+                },
+                attendeeName: {
+                    type: "string",
+                    description: "Nome del destinatario",
+                },
+                expiryDate: {
+                    type: "string",
+                    description: "Data di scadenza nel formato YYYY-MM-DD",
+                }
+            },
+            required: ["attendeeEmail", "attendeeName", "expiryDate"],
+        }
     }
 ];
 
@@ -401,5 +423,47 @@ export const toolImplementations: Record<string, ToolFunction> = {
         });
 
         return result.data;
+    },
+    create_calendar_event: async (input) => {
+        const attendeeEmail = input.attendeeEmail as string;
+        const attendeeName = input.attendeeName as string;
+        const expiryDate = input.expiryDate as string;
+
+        const auth = await getAuthClient();
+        const calendar = google.calendar({ version: "v3", auth });
+
+        await calendar.events.insert({
+            calendarId: "primary",
+            requestBody: {
+                summary: `Scadenza credenziali - ${attendeeName}`,
+                description: `Le credenziali di ${attendeeName} scadono oggi. Procedere con il rinnovo.`,
+                start: {
+                    date: expiryDate,
+                    timeZone: "Europe/Rome",
+                },
+                end: {
+                    date: expiryDate,
+                    timeZone: "Europe/Rome",
+                },
+                attendees: [
+                    { email: attendeeEmail, displayName: attendeeName }
+                ],
+                reminders: {
+                    useDefault: false,
+                    overrides: [
+                        { method: "email", minutes: 4320 },  // 3 giorni prima
+                        { method: "popup", minutes: 4320 },
+                    ],
+                },
+            },
+        });
+
+        console.log(`[tool] create_calendar_event creato per: ${attendeeEmail} il ${expiryDate}`);
+
+        return {
+            success: true,
+            attendeeEmail,
+            expiryDate,
+        };
     },
 };

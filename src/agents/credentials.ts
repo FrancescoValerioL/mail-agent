@@ -13,6 +13,8 @@ Hai accesso ai seguenti tool:
 - check_send_log: controlla sempre prima di inviare mail, passando filename e lastModifiedAt ottenuti da list_drive_folder
 - send_email: invia una mail a un destinatario
 - write_send_log: scrivi sempre dopo aver completato tutti gli invii
+- create_calendar_event: crea un evento sul calendario per utenti expiring, 
+  subito dopo aver inviato la mail personale. Mai per utenti expired.
 
 Regole di validazione categoria in base a expiry_date:
 - active: scadenza oltre 15 giorni → nessuna mail
