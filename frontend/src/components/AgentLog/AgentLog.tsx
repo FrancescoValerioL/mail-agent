@@ -30,7 +30,7 @@ function AgentLog({ isRunning, agentKey }: AgentLogProps) {
 
 	return (
 		<div className="agent-log">
-			<ScrollArea className="h-64">
+			<ScrollArea className="h-128">
 				{logs.map((log, index) => (
 					<div key={index} className="text-sm text-gray-700 text-start">
 						<strong>{agentKey}:</strong> {log}

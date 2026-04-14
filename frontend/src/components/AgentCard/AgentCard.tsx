@@ -40,7 +40,7 @@ function AgentCard({ agentName, agentDescription, agentStatus, agentKey, onRun }
 						runAgent(agentKey);
 						onRun();
 					}}
-					disabled={agentStatus === "running"}
+					disabled={agentStatus !== "idle"}
 				>
 					Avvia
 				</Button>
