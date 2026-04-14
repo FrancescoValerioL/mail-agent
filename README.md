@@ -1,16 +1,33 @@
 # Mail Agent
 
-Un agente AI che gestisce l'invio automatico di mail a utenti in base al contenuto di file CSV/Google Sheet su Google Drive, con dashboard React per il monitoraggio in tempo reale.
+Un sistema multi-agente AI per la gestione automatica di comunicazioni aziendali, con dashboard React per il monitoraggio in tempo reale.
 
-## Funzionalità
+## Agenti disponibili
+
+### Credentials Agent (`credentials`)
+
+Gestisce l'invio automatico di mail per credenziali in scadenza:
 
 - Lettura file CSV e Google Sheet da Google Drive
-- Validazione dei dati contro la struttura organizzativa (`org.json`)
+- Validazione dati contro la struttura organizzativa (`org.json`)
 - Invio mail personalizzate per categoria (`expiring`, `expired`)
 - Notifiche gerarchiche a team leader, manager e data steward
 - Rettifica automatica in caso di modifiche al file sorgente
 - Re-invio giornaliero promemoria per utenti `expiring`
 - Creazione eventi Google Calendar per utenti `expiring`
+
+### Document Summarizer Agent (`document-summarizer`)
+
+Monitora una cartella Drive e invia riassunti automatici di documenti PDF:
+
+- Lettura PDF da Google Drive
+- Estrazione testo con `pdfjs-dist`
+- Generazione riassunto strutturato con sezioni fisse (Sintesi, Punti chiave, Azioni richieste, Note aggiuntive)
+- Invio mail con PDF allegato a tutti i `document_recipients`
+- Rettifica automatica se il documento viene modificato
+
+## Funzionalità comuni
+
 - Log degli invii su Google Drive
 - Server Express con streaming log in tempo reale (SSE)
 - Dashboard React con stato agente e log in tempo reale
@@ -35,6 +52,7 @@ DRIVE_FOLDER_DATA=
 DRIVE_FOLDER_REFERENCE=
 DRIVE_FOLDER_LOGS=
 DRIVE_FOLDER_MANUAL=
+DRIVE_FOLDER_DOCUMENTS=
 ```
 
 - `ANTHROPIC_API_KEY` — chiave API Anthropic (console.anthropic.com)
@@ -44,6 +62,7 @@ DRIVE_FOLDER_MANUAL=
 - `DRIVE_FOLDER_REFERENCE` — ID cartella Drive con `org.json`
 - `DRIVE_FOLDER_LOGS` — ID cartella Drive per i log degli invii
 - `DRIVE_FOLDER_MANUAL` — ID cartella Drive per il file `send_emails.json`
+- `DRIVE_FOLDER_DOCUMENTS` — ID cartella Drive con i PDF da riassumere
 
 ### 2 — Google OAuth
 
@@ -68,10 +87,11 @@ Crea questa struttura su Drive e inserisci gli ID nel `.env`:
 
 ```
 Mail Agent/
-├── data/         # file CSV degli utenti
+├── data/         # file CSV degli utenti (Credentials Agent)
 ├── reference/    # org.json
 ├── logs/         # send_log.json (generato automaticamente)
-└── manual/       # send_emails.json (generato automaticamente)
+├── manual/       # send_emails.json (generato automaticamente)
+└── documents/    # PDF da riassumere (Document Summarizer Agent)
 ```
 
 ### 5 — Struttura org.json
@@ -80,6 +100,7 @@ Mail Agent/
 {
 	"manager": { "name": "...", "email": "..." },
 	"data_steward": { "name": "...", "email": "..." },
+	"document_recipients": [{ "name": "...", "email": "..." }],
 	"teams": [
 		{
 			"name": "Nome Team",
@@ -90,7 +111,7 @@ Mail Agent/
 }
 ```
 
-### 6 — Struttura CSV utenti
+### 6 — Struttura CSV utenti (Credentials Agent)
 
 ```csv
 name,email,category,expiry_date
@@ -106,10 +127,14 @@ Anna Neri,anna@example.com,active,2026-06-10
 
 ## Avvio
 
-### Agente da CLI
+### Agenti da CLI
 
 ```bash
+# Credentials Agent
 npm start credentials "Processa la cartella Drive e invia le mail"
+
+# Document Summarizer Agent
+npm start document-summarizer "Processa i documenti nella cartella Drive"
 ```
 
 ### Server Express
@@ -133,7 +158,7 @@ Il frontend gira su `http://localhost:5173`.
 ## API
 
 ```
-POST /api/agents/:agent/run    # avvia un agente
+POST /api/agents/:agent/run    # avvia un agente (credentials | document-summarizer)
 GET  /api/agents/status        # stato ultimo run
 GET  /api/agents/logs/stream   # streaming log SSE in tempo reale
 ```
@@ -144,6 +169,10 @@ GET  /api/agents/logs/stream   # streaming log SSE in tempo reale
 curl -X POST http://localhost:3000/api/agents/credentials/run \
   -H "Content-Type: application/json" \
   -d '{"goal": "Processa la cartella Drive e invia le mail"}'
+
+curl -X POST http://localhost:3000/api/agents/document-summarizer/run \
+  -H "Content-Type: application/json" \
+  -d '{"goal": "Processa i documenti nella cartella Drive"}'
 ```
 
 ### Esempio streaming log
@@ -158,27 +187,28 @@ curl -N http://localhost:3000/api/agents/logs/stream
 mail-agent/
 ├── src/
 │   ├── agents/
-│   │   └── credentials.ts    # agente credenziali
+│   │   ├── credentials.ts          # agente credenziali
+│   │   └── document-summarizer.ts  # agente riassunto documenti
 │   ├── auth/
-│   │   └── google.ts         # autenticazione OAuth Google
+│   │   └── google.ts               # autenticazione OAuth Google
 │   ├── tools/
-│   │   └── index.ts          # registry tool
-│   ├── logger.ts             # sistema di logging con EventEmitter
-│   ├── orchestrator.ts       # orchestratore multi-agente
-│   ├── server.ts             # server Express
-│   └── index.ts              # entry point CLI
+│   │   └── index.ts                # registry tool condivisi
+│   ├── logger.ts                   # sistema di logging con EventEmitter
+│   ├── orchestrator.ts             # orchestratore multi-agente
+│   ├── server.ts                   # server Express
+│   └── index.ts                    # entry point CLI
 ├── frontend/
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── AgentCard/    # card agente con stato e pulsante avvio
-│   │   │   ├── AgentLog/     # pannello log SSE in tempo reale
-│   │   │   └── ui/           # componenti shadcn
+│   │   │   ├── AgentCard/          # card agente con stato e pulsante avvio
+│   │   │   ├── AgentLog/           # pannello log SSE in tempo reale
+│   │   │   └── ui/                 # componenti shadcn
 │   │   ├── services/
-│   │   │   └── agentService.ts  # chiamate API e SSE
+│   │   │   └── agentService.ts     # chiamate API e SSE
 │   │   └── App.tsx
 │   └── package.json
-├── data/                     # file locali di riferimento
-├── credentials.json          # credenziali OAuth Google (non committare)
-├── token.json                # token OAuth (non committare)
-└── .env                      # variabili d'ambiente (non committare)
+├── data/                           # file locali di riferimento
+├── credentials.json                # credenziali OAuth Google (non committare)
+├── token.json                      # token OAuth (non committare)
+└── .env                            # variabili d'ambiente (non committare)
 ```
