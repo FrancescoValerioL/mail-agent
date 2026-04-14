@@ -3,10 +3,13 @@ import fs from "fs";
 import path from "path";
 import Papa from "papaparse";
 import nodemailer from "nodemailer";
+import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
 import { google } from "googleapis";
 import { getAuthClient } from "../auth/google";
 
 export type ToolFunction = (input: Record<string, unknown>) => unknown | Promise<unknown>;
+
+const attachmentCache = new Map<string, { filename: string; base64: string; }>();
 
 const transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
@@ -107,6 +110,10 @@ export const toolDefinitions: Anthropic.Tool[] = [
                 previousSentAt: {
                     type: "string",
                     description: "data precedente invio, opzionale (solo se isRectification è true)"
+                },
+                attachmentCacheKey: {
+                    type: "string",
+                    description: "Chiave cache per recuperare il PDF allegato, ottenuta da read_drive_pdf. Opzionale."
                 }
             },
             required: ["to", "subject", "body", "isRectification"],
@@ -205,6 +212,46 @@ export const toolDefinitions: Anthropic.Tool[] = [
                 }
             },
             required: ["attendeeEmail", "attendeeName", "expiryDate"],
+        }
+    },
+    {
+        name: "read_drive_pdf",
+        description: "Scarica un file PDF da Google Drive, estrae il testo e restituisce il contenuto testuale per il riassunto e il file in base64 per l'allegato mail. Usare solo per file con mimeType 'application/pdf'.",
+        input_schema: {
+            type: "object" as const,
+            properties: {
+                fileId: {
+                    type: "string",
+                    description: "ID del file PDF su Google Drive, ottenuto da list_drive_folder",
+                },
+                filename: {
+                    type: "string",
+                    description: "Nome del file PDF, usato per l'allegato mail",
+                }
+            },
+            required: ["fileId", "filename"],
+        }
+    },
+    {
+        name: "summarize_document",
+        description: "Genera un riassunto strutturato del testo estratto da un PDF usando l'API Anthropic. Restituisce un riassunto con sezioni fisse: Sintesi, Punti chiave, Azioni richieste, Note aggiuntive. Chiamare sempre dopo read_drive_pdf.",
+        input_schema: {
+            type: "object" as const,
+            properties: {
+                filename: {
+                    type: "string",
+                    description: "Nome del documento, usato per contestualizzare il riassunto",
+                },
+                text: {
+                    type: "string",
+                    description: "Testo estratto dal PDF da riassumere, ottenuto da read_drive_pdf",
+                },
+                pages: {
+                    type: "number",
+                    description: "Numero di pagine del PDF, ottenuto da read_drive_pdf",
+                }
+            },
+            required: ["filename", "text", "pages"],
         }
     }
 ];
@@ -343,11 +390,22 @@ export const toolImplementations: Record<string, ToolFunction> = {
         const logFilename = "send_emails.json";
 
         // Invia la mail
+        const attachmentCacheKey = input.attachmentCacheKey as string | undefined;
+        let attachments = undefined;
+
+        if (attachmentCacheKey) {
+            const cached = attachmentCache.get(attachmentCacheKey);
+            if (cached) {
+                attachments = [{ filename: cached.filename, content: cached.base64, encoding: "base64" }];
+            }
+        }
+
         await transporter.sendMail({
             from: `"Mail Agent" <${process.env.EMAIL_USER}>`,
             to,
             subject,
             text: body,
+            ...(attachments && { attachments }),
         });
 
         const auth = await getAuthClient();
@@ -585,5 +643,91 @@ export const toolImplementations: Record<string, ToolFunction> = {
             attendeeEmail,
             expiryDate,
         };
+    },
+    read_drive_pdf: async (input) => {
+        const fileId = input.fileId as string;
+        const filename = input.filename as string;
+
+        const auth = await getAuthClient();
+        const drive = google.drive({ version: "v3", auth });
+
+        const response = await drive.files.get(
+            { fileId, alt: "media" },
+            { responseType: "arraybuffer" }
+        );
+
+        const buffer = Buffer.from(response.data as ArrayBuffer);
+        const uint8Array = new Uint8Array(buffer);
+
+        const pdf = await pdfjsLib.getDocument({ data: uint8Array }).promise;
+        const numPages = pdf.numPages;
+
+        let text = "";
+        for (let i = 1; i <= numPages; i++) {
+            const page = await pdf.getPage(i);
+            const content = await page.getTextContent();
+            const pageText = content.items
+                .map((item: any) => ("str" in item ? item.str : ""))
+                .join(" ");
+            text += pageText + "\n";
+        }
+
+        attachmentCache.set(fileId, { filename, base64: buffer.toString("base64") });
+
+        return {
+            filename,
+            text,
+            pages: numPages,
+            attachmentCacheKey: fileId,
+        };
+    },
+    summarize_document: async (input) => {
+        const filename = input.filename as string;
+        const text = input.text as string;
+        const pages = input.pages as number;
+
+        const response = await fetch("https://api.anthropic.com/v1/messages", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "x-api-key": process.env.ANTHROPIC_API_KEY!,
+                "anthropic-version": "2023-06-01",
+            },
+            body: JSON.stringify({
+                model: "claude-sonnet-4-5",
+                max_tokens: 1024,
+                messages: [
+                    {
+                        role: "user",
+                        content: `Genera un riassunto strutturato del seguente documento.
+
+Documento: ${filename}
+Pagine: ${pages}
+
+Testo:
+${text}
+
+Rispondi ESCLUSIVAMENTE con questo formato:
+
+📄 **Sintesi**
+[2-3 righe sul contenuto generale]
+
+🔑 **Punti chiave**
+[bullet points con le informazioni principali]
+
+✅ **Azioni richieste**
+[se presenti, altrimenti scrivi "Nessuna azione richiesta"]
+
+📝 **Note aggiuntive**
+[contesto rilevante non incluso nelle sezioni precedenti]`
+                    }
+                ],
+            }),
+        });
+
+        const data = await response.json();
+        const summary = data.content[0].text;
+
+        return { summary };
     },
 };

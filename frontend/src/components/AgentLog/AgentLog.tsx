@@ -29,7 +29,7 @@ function AgentLog({ isRunning, agentKey }: AgentLogProps) {
 	}, [isRunning]);
 
 	return (
-		<div className="agent-log">
+		<div className="agent-log border rounded p-4 w-full">
 			<ScrollArea className="h-128">
 				{logs.map((log, index) => (
 					<div key={index} className="text-sm text-gray-700 text-start">

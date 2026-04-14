@@ -4,34 +4,74 @@ import { getAgentStatus } from "./services/agentService";
 import AgentLog from "./components/AgentLog/AgentLog";
 
 function App() {
-	const [status, setStatus] = useState<string>("offline");
+	const [agentStatuses, setAgentStatuses] = useState<Record<string, string>>({
+		credentials: "offline",
+		"document-summarizer": "offline",
+	});
+	const [activeAgentKey, setActiveAgentKey] = useState<string>("credentials");
+
 	useEffect(() => {
 		const fetchStatus = () => {
 			getAgentStatus()
 				.then((data) => {
 					if (data) {
-						setStatus(data.running ? "running" : "idle");
+						setAgentStatuses((prev) => {
+							const next = { ...prev };
+							Object.keys(next).forEach((k) => {
+								next[k] = "idle";
+							});
+							if (data.running && data.lastRunAgent) {
+								next[data.lastRunAgent] = "running";
+							}
+							return next;
+						});
 					} else {
-						setStatus("offline");
+						setAgentStatuses({
+							credentials: "offline",
+							"document-summarizer": "offline",
+						});
 					}
 				})
-				.catch(() => setStatus("offline"));
+				.catch(() =>
+					setAgentStatuses({
+						credentials: "offline",
+						"document-summarizer": "offline",
+					}),
+				);
 		};
-		fetchStatus(); // chiamata immediata al mount
-		const interval = setInterval(fetchStatus, 5000); // poi ogni 5 secondi
 
+		fetchStatus();
+		const interval = setInterval(fetchStatus, 5000);
 		return () => clearInterval(interval);
 	}, []);
+
 	return (
-		<div className="p-8 space-y-4">
-			<AgentCard
-				agentName="Mail Agent"
-				agentDescription="This is a simple mail agent"
-				agentStatus={status}
-				agentKey="credentials"
-				onRun={() => setStatus("running")}
-			></AgentCard>
-			<AgentLog isRunning={status === "running"} agentKey="credentials" />
+		<div className="p-8  w-full">
+			<div className="row flex justify-around">
+				<AgentCard
+					agentName="Mail Agent"
+					agentDescription="Gestisce l'invio di mail per credenziali in scadenza"
+					agentStatus={agentStatuses["credentials"]}
+					agentKey="credentials"
+					onRun={() => {
+						setAgentStatuses((prev) => ({ ...prev, credentials: "running" }));
+						setActiveAgentKey("credentials");
+					}}
+				/>
+				<AgentCard
+					agentName="Document Summarizer"
+					agentDescription="Riassume e invia documenti PDF"
+					agentStatus={agentStatuses["document-summarizer"]}
+					agentKey="document-summarizer"
+					onRun={() => {
+						setAgentStatuses((prev) => ({ ...prev, "document-summarizer": "running" }));
+						setActiveAgentKey("document-summarizer");
+					}}
+				/>
+			</div>
+			<div className="row py-3">
+				<AgentLog isRunning={Object.values(agentStatuses).some((s) => s === "running")} agentKey={activeAgentKey} />
+			</div>
 		</div>
 	);
 }

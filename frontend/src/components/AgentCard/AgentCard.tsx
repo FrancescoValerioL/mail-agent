@@ -25,8 +25,8 @@ function AgentCard({ agentName, agentDescription, agentStatus, agentKey, onRun }
 	};
 
 	return (
-		<Card>
-			<CardHeader>
+		<Card className="w-96 h-44">
+			<CardHeader className="h-32">
 				<CardTitle>{agentName}</CardTitle>
 				<CardDescription>{agentDescription}</CardDescription>
 				<CardAction>
