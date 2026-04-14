@@ -253,6 +253,31 @@ export const toolDefinitions: Anthropic.Tool[] = [
             },
             required: ["filename", "text", "pages"],
         }
+    },
+    {
+        name: "send_email_bulk",
+        description: "Invia la stessa mail a più destinatari in una sola chiamata. Usare quando il contenuto è identico per tutti i destinatari, come nel caso dei riassunti documenti.",
+        input_schema: {
+            type: "object" as const,
+            properties: {
+                recipients: {
+                    type: "array",
+                    items: {
+                        type: "object",
+                        properties: {
+                            name: { type: "string" },
+                            email: { type: "string" }
+                        }
+                    },
+                    description: "Lista dei destinatari"
+                },
+                subject: { type: "string", description: "Oggetto della mail" },
+                body: { type: "string", description: "Corpo della mail" },
+                attachmentCacheKey: { type: "string", description: "Chiave cache per l'allegato PDF, ottenuta da read_drive_pdf" },
+                isRectification: { type: "boolean", description: "True se è una rettifica" }
+            },
+            required: ["recipients", "subject", "body", "isRectification"]
+        }
     }
 ];
 
@@ -729,5 +754,78 @@ Rispondi ESCLUSIVAMENTE con questo formato:
         const summary = data.content[0].text;
 
         return { summary };
+    },
+    send_email_bulk: async (input) => {
+        const recipients = input.recipients as { name: string; email: string; }[];
+        const subject = input.subject as string;
+        const body = input.body as string;
+        const isRectification = input.isRectification as boolean;
+        const attachmentCacheKey = input.attachmentCacheKey as string | undefined;
+
+        let attachments = undefined;
+        if (attachmentCacheKey) {
+            const cached = attachmentCache.get(attachmentCacheKey);
+            if (cached) {
+                attachments = [{ filename: cached.filename, content: cached.base64, encoding: "base64" }];
+            }
+        }
+
+        const results = [];
+        for (const recipient of recipients) {
+            await transporter.sendMail({
+                from: `"Mail Agent" <${process.env.EMAIL_USER}>`,
+                to: recipient.email,
+                subject,
+                text: body,
+                ...(attachments && { attachments }),
+            });
+
+            results.push({ to: recipient.email, success: true });
+        }
+
+        // Log su Drive
+        const folderId = process.env.DRIVE_FOLDER_MANUAL;
+        const logFilename = "send_emails.json";
+        const auth = await getAuthClient();
+        const drive = google.drive({ version: "v3", auth });
+
+        const existing = await drive.files.list({
+            q: `'${folderId}' in parents and name = '${logFilename}' and trashed = false`,
+            fields: "files(id)",
+        });
+        const existingFile = existing.data.files?.[0];
+        let emails: object[] = [];
+
+        if (existingFile?.id) {
+            const response = await drive.files.get(
+                { fileId: existingFile.id, alt: "media" },
+                { responseType: "text" }
+            );
+            emails = JSON.parse(response.data as string);
+        }
+
+        emails.push({
+            recipients: recipients.map(r => r.email),
+            subject,
+            body,
+            isRectification,
+            sentAt: new Date().toISOString(),
+        });
+
+        const fileBody = JSON.stringify(emails, null, 2);
+
+        if (existingFile?.id) {
+            await drive.files.update({
+                fileId: existingFile.id,
+                media: { mimeType: "application/json", body: fileBody },
+            });
+        } else {
+            await drive.files.create({
+                requestBody: { name: logFilename, parents: [folderId!] },
+                media: { mimeType: "application/json", body: fileBody },
+            });
+        }
+
+        return { success: true, sent: results.length, recipients: results };
     },
 };

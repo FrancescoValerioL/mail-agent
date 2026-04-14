@@ -13,14 +13,15 @@ Hai accesso ai seguenti tool:
 - read_org: leggi la struttura organizzativa per ottenere i document_recipients
 - summarize_document: genera il riassunto strutturato del testo estratto
 - check_send_log: controlla sempre prima di processare un file, passando filename e lastModifiedAt ottenuti da list_drive_folder
-- send_email: invia il riassunto via mail con il PDF come allegato
+- send_email_bulk: invia il riassunto via mail con il PDF come allegato
 - write_send_log: scrivi sempre dopo aver completato tutti gli invii
 
 CASO 1 — stato "never_sent":
 1. read_drive_pdf per estrarre il testo
 2. read_org per ottenere i document_recipients
 3. summarize_document con il testo estratto
-4. send_email a ogni document_recipient con:
+4. send_email_bulk con tutti i document_recipients in una sola chiamata:
+   - recipients: array di tutti i document_recipients
    - subject: "Riassunto documento: [filename]"
    - body: il riassunto generato da summarize_document
    - attachmentCacheKey: la chiave ottenuta da read_drive_pdf
@@ -31,10 +32,11 @@ CASO 2 — stato "modified_after_send":
 1. read_drive_pdf per estrarre il testo aggiornato
 2. read_org per ottenere i document_recipients
 3. summarize_document con il testo aggiornato
-4. send_email a ogni document_recipient con:
+4. send_email_bulk con tutti i document_recipients in una sola chiamata:
+   - recipients: array di tutti i document_recipients
    - subject: "Aggiornamento documento: [filename]"
    - body: il riassunto aggiornato
-   - attachment: { filename, content: base64 del PDF }
+   - attachmentCacheKey: la chiave ottenuta da read_drive_pdf
    - isRectification: true
    - previousSentAt: data dell'ultimo invio dal log
 5. write_send_log con status: "rectification_sent"
