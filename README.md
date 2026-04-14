@@ -1,6 +1,6 @@
 # Mail Agent
 
-Un agente AI che gestisce l'invio automatico di mail a utenti in base al contenuto di file CSV/Google Sheet su Google Drive.
+Un agente AI che gestisce l'invio automatico di mail a utenti in base al contenuto di file CSV/Google Sheet su Google Drive, con dashboard React per il monitoraggio in tempo reale.
 
 ## Funzionalità
 
@@ -13,6 +13,7 @@ Un agente AI che gestisce l'invio automatico di mail a utenti in base al contenu
 - Creazione eventi Google Calendar per utenti `expiring`
 - Log degli invii su Google Drive
 - Server Express con streaming log in tempo reale (SSE)
+- Dashboard React con stato agente e log in tempo reale
 
 ## Requisiti
 
@@ -119,6 +120,16 @@ npm run server
 
 Il server gira su `http://localhost:3000`.
 
+### Frontend React
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Il frontend gira su `http://localhost:5173`.
+
 ## API
 
 ```
@@ -156,6 +167,16 @@ mail-agent/
 │   ├── orchestrator.ts       # orchestratore multi-agente
 │   ├── server.ts             # server Express
 │   └── index.ts              # entry point CLI
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── AgentCard/    # card agente con stato e pulsante avvio
+│   │   │   ├── AgentLog/     # pannello log SSE in tempo reale
+│   │   │   └── ui/           # componenti shadcn
+│   │   ├── services/
+│   │   │   └── agentService.ts  # chiamate API e SSE
+│   │   └── App.tsx
+│   └── package.json
 ├── data/                     # file locali di riferimento
 ├── credentials.json          # credenziali OAuth Google (non committare)
 ├── token.json                # token OAuth (non committare)
