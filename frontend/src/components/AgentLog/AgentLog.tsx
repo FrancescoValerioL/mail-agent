@@ -16,7 +16,7 @@ function AgentLog({ isRunning, agentKey }: AgentLogProps) {
 		if (!isRunning) return;
 
 		if (!isFirstRun.current) {
-			setLogs([]);
+			queueMicrotask(() => setLogs([]));
 		}
 		isFirstRun.current = false;
 
